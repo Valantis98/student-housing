@@ -1,0 +1,9 @@
+<h2>Welcome Admin!</h2>
+<button onclick="logout()">Logout</button>
+<script>
+  async function logout() {
+    const res = await fetch("/logout", { method: "POST" });
+    const data = await res.json();
+    window.location.href = data.redirect;
+  }
+</script>

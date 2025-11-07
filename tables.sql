@@ -1,0 +1,24 @@
+CREATE TABLE admins (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  password VARCHAR(50) NOT NULL
+);
+
+
+CREATE TABLE students (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_number VARCHAR(20) UNIQUE NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  diet_pref VARCHAR(100),
+  room_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  building VARCHAR(50),
+  room_number VARCHAR(20),
+  capacity INT DEFAULT 1,
+  occupied INT DEFAULT 0
+);
