@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 100px; }
+    form { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+    input { display: block; margin: 10px auto; padding: 8px; width: 200px; }
+    button { padding: 8px 16px; }
+  </style>
+</head>
+<body>
+  <h2>Σύνδεση</h2>
+  <form id="loginForm">
+    <input type="text" name="username" placeholder="Όνομα Χρήστη" required>
+    <input type="password" name="password" placeholder="Κωδικός" required>
+    <button type="submit">Είσοδος</button>
+  </form>
+
+  <p id="msg" style="color:red;"></p>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      if (result.redirect) {
+        window.location.href = result.redirect;
+      } else {
+        document.getElementById("msg").textContent = result.message || "Λάθος στοιχεία!";
+      }
+    });
+  </script>
+</body>
+</html>
