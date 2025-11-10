@@ -2,8 +2,8 @@ const express = require("express");
 const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
+const fs = require("fs"); // ✅ κράτα το εδώ!
 const MySQLStore = require("express-mysql-session")(session);
-
 
 const app = express();
 app.use(express.json());
@@ -16,14 +16,14 @@ app.use('/public', express.static(path.join(__dirname, 'public'), {
         if (path.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache');
         } else if (path.endsWith('.css') || path.endsWith('.js')) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
         } else if (path.endsWith('.jpg') || path.endsWith('.png')) {
-            res.setHeader('Cache-Control', 'public, max-age=604800'); // 1 week
+            res.setHeader('Cache-Control', 'public, max-age=604800');
         }
     }
 }));
 
-// Δημιουργία σύνδεσης με τη βάση
+// ✅ Δημιουργία σύνδεσης με τη βάση
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -31,7 +31,6 @@ const db = mysql.createConnection({
   database: "student_housing"
 });
 
-// Έλεγχος σύνδεσης
 db.connect(err => {
   if (err) {
     console.error("❌ Database connection failed:", err);
@@ -40,28 +39,27 @@ db.connect(err => {
   }
 });
 
-// Configure session 
+// ✅ Ρύθμιση session store
 const sessionStore = new MySQLStore({
     host: 'localhost',
+    port: 3306,
     user: 'root',
     password: '',
     database: 'student_housing'
 });
-// Session setup
+
 app.use(session({
   secret: "supersecretkey",
   resave: false,
   saveUninitialized: false,
   store: sessionStore
-  
 }));
 
-
-// Middleware για authentication
+// ✅ Middleware για authentication
 function isAuthenticated(req, res, next) {
   const roleUrlMap = {
     admin: "/private/admin",
-    student: "/private/student",
+    student: "/private/student"
   };
 
   if (req.session.user) {
@@ -82,8 +80,8 @@ app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
   const roles = [
-    { table: "admins", role: "admin", redirect: "/admin/admin.html" },
-    { table: "students", role: "student", redirect: "/student/student.html" }
+    { table: "admins", role: "admin", redirect: "/private/admin/admin.html" },
+    { table: "students", role: "student", redirect: "/private/student/student.html" }
   ];
 
   const checkCredentials = (index) => {
@@ -111,7 +109,6 @@ app.post("/login", (req, res) => {
 
     checkCredentials(0);
 });
-  
 
 // ✅ Logout route
 app.post("/logout", (req, res) => {
@@ -128,26 +125,25 @@ app.post("/logout", (req, res) => {
   });
 });
 
-
-// Route handler for the main page
+// ✅ Route handler for the main page (με fs)
 app.get('/', (req, res) => {
-    const filePath = path.join(__dirname, 'public/login.html');
+    const filePath = path.join(__dirname, 'public', 'login.html'); // ✅ πρόσεξε: path.join(__dirname, 'public', 'login.html')
     fs.readFile(filePath, (err, data) => {
         if (err) {
-            console.error('Error reading login_page.html:', err);
+            console.error('Error reading login.html:', err);
             res.writeHead(500, {'Content-Type': 'text/plain'});
             res.end('Internal Server Error');
             return;
         }
         res.writeHead(200, {'Content-Type': 'text/html'});
-        console.log(filePath);
+        console.log("Serving:", filePath);
         res.end(data);
     });
 });
 
-// Dynamic route handler for the private/teacher directory
+// ✅ Dynamic route handler for the private/admin directory
 app.get('/private/admin/:filename', isAuthenticated, (req, res) => {
-    const filePath = path.join(__dirname, 'private/admin', req.params.filename);
+    const filePath = path.join(__dirname, 'private', 'admin', req.params.filename);
     fs.readFile(filePath, (err, data) => {
         if (err) {
             console.error(`Error reading ${req.params.filename}:`, err);
@@ -156,15 +152,13 @@ app.get('/private/admin/:filename', isAuthenticated, (req, res) => {
             return;
         }
         res.writeHead(200, {'Content-Type': 'text/html'});
-        console.log(req.params.filename);
-        console.log(filePath);
         res.end(data);
     });
 });
 
-// Dynamic route handler for the private/student directory
+// ✅ Dynamic route handler for the private/student directory
 app.get('/private/student/:filename', isAuthenticated, (req, res) => {
-    const filePath = path.join(__dirname, 'private/student', req.params.filename);
+    const filePath = path.join(__dirname, 'private', 'student', req.params.filename);
     fs.readFile(filePath, (err, data) => {
         if (err) {
             console.error(`Error reading ${req.params.filename}:`, err);
@@ -173,12 +167,9 @@ app.get('/private/student/:filename', isAuthenticated, (req, res) => {
             return;
         }
         res.writeHead(200, {'Content-Type': 'text/html'});
-        console.log(req.params.filename);
-        console.log(filePath);
         res.end(data);
     });
 });
-
 
 // ✅ Εκκίνηση server
 app.listen(3000, () => {

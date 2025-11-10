@@ -1,3 +1,9 @@
+CREATE TABLE roles (
+    id INT NOT NULL,
+    roles ENUM('admin', 'student' ),
+    PRIMARY KEY (id)
+) ENGINE = InnoDB CHARACTER SET greek COLLATE greek_general_ci;
+
 CREATE TABLE admins (
   admin_am INT UNIQUE NOT NULL,
   role_id INT NOT NULL,
