@@ -1,8 +1,9 @@
+const http = require('http');
+const fs = require('fs');
 const express = require("express");
 const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
-const fs = require("fs"); // ✅ κράτα το εδώ!
 const MySQLStore = require("express-mysql-session")(session);
 
 const app = express();
@@ -10,20 +11,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// Serve static files with caching headers
 app.use('/public', express.static(path.join(__dirname, 'public'), {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
-        } else if (path.endsWith('.css') || path.endsWith('.js')) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
-        } else if (path.endsWith('.jpg') || path.endsWith('.png')) {
-            res.setHeader('Cache-Control', 'public, max-age=604800');
-        }
-    }
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    else if (path.endsWith('.css') || path.endsWith('.js')) res.setHeader('Cache-Control', 'public, max-age=31536000');
+    else if (path.endsWith('.jpg') || path.endsWith('.png')) res.setHeader('Cache-Control', 'public, max-age=604800');
+  }
 }));
 
-// ✅ Δημιουργία σύνδεσης με τη βάση
+// Database
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -32,20 +28,16 @@ const db = mysql.createConnection({
 });
 
 db.connect(err => {
-  if (err) {
-    console.error("❌ Database connection failed:", err);
-  } else {
-    console.log("✅ Connected to MySQL database!");
-  }
+  if (err) console.error(" Database connection failed:", err);
+  else console.log("Connected to MySQL database!");
 });
 
-// ✅ Ρύθμιση session store
+// Sessions
 const sessionStore = new MySQLStore({
-    host: 'localhost',
-    port: 3306,
-    user: 'root',
-    password: '',
-    database: 'student_housing'
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'student_housing'
 });
 
 app.use(session({
@@ -55,7 +47,7 @@ app.use(session({
   store: sessionStore
 }));
 
-// ✅ Middleware για authentication
+// Authentication middleware
 function isAuthenticated(req, res, next) {
   const roleUrlMap = {
     admin: "/private/admin",
@@ -65,17 +57,14 @@ function isAuthenticated(req, res, next) {
   if (req.session.user) {
     const role = req.session.user.role;
     const url = req.originalUrl;
-    if (roleUrlMap[role] && url.startsWith(roleUrlMap[role])) {
-      return next();
-    } else {
-      res.redirect(roleUrlMap[role] ? `${roleUrlMap[role]}/${role}.html` : "/");
-    }
+    if (roleUrlMap[role] && url.startsWith(roleUrlMap[role])) return next();
+    else res.redirect(roleUrlMap[role] ? `${roleUrlMap[role]}/${role}.html` : "/");
   } else {
     res.redirect("/");
   }
 }
 
-// ✅ Login route
+// Login
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
@@ -85,36 +74,42 @@ app.post("/login", (req, res) => {
   ];
 
   const checkCredentials = (index) => {
-        if (index >= roles.length) {
-            res.status(401).json({ message: 'Λανθασμένο username ή Κωδικός' });
-            return;
+    if (index >= roles.length) {
+      res.status(401).json({ message: "Λανθασμένο username ή Κωδικός" });
+      return;
+    }
+
+    const { table, role, redirect } = roles[index];
+    db.query(
+      `SELECT *, ${role}_am FROM ${table} WHERE ${role}_username = ? AND ${role}_password = ?`,
+      [username, password],
+      (err, results) => {
+        if (err) {
+          console.error("Error executing query:", err);
+          res.status(500).json({ message: "Internal Server Error" });
+          return;
         }
+        if (results.length > 0) {
+          req.session.user = {
+            username,
+            role,
+            am: results[0][`${role}_am`]
+          };
+          console.log(` User ${username} logged in as ${role}`);
+          res.json({ redirect });
+        } else {
+          checkCredentials(index + 1);
+        }
+      }
+    );
+  };
 
-        const { table, role, redirect } = roles[index];
-        db.query(`SELECT *, ${role}_am FROM ${table} WHERE ${role.toLowerCase()}_username = ? AND ${role.toLowerCase()}_password = ?`, [username, password], (err, results) => {
-            if (err) {
-                console.error('Error executing query:', err);
-                res.status(500).json({ message: 'Internal Server Error' });
-                return;
-            }
-            if (results.length > 0) {
-                req.session.user = { username: username, role: role, am: results[0][`${role.toLowerCase()}_am`] };
-                console.log(`User ${username} logged in with role ${role} and session ID: ${req.sessionID} and session am: ${req.session.user.am}`);
-                res.json({ redirect });
-            } else {
-                checkCredentials(index + 1);
-            }
-        });
-    };
-
-    checkCredentials(0);
+  checkCredentials(0);
 });
 
-// ✅ Logout route
+// Logout
 app.post("/logout", (req, res) => {
-  if (req.session.user) {
-    console.log(`👋 ${req.session.user.username} logged out`);
-  }
+  if (req.session.user) console.log(`👋 ${req.session.user.username} logged out`);
   req.session.destroy((err) => {
     if (err) {
       console.error("Error destroying session:", err);
@@ -125,54 +120,38 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// ✅ Route handler for the main page (με fs)
-app.get('/', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'login.html'); // ✅ πρόσεξε: path.join(__dirname, 'public', 'login.html')
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            console.error('Error reading login.html:', err);
-            res.writeHead(500, {'Content-Type': 'text/plain'});
-            res.end('Internal Server Error');
-            return;
-        }
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        console.log("Serving:", filePath);
-        res.end(data);
-    });
+// Routes
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// ✅ Dynamic route handler for the private/admin directory
-app.get('/private/admin/:filename', isAuthenticated, (req, res) => {
-    const filePath = path.join(__dirname, 'private', 'admin', req.params.filename);
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            console.error(`Error reading ${req.params.filename}:`, err);
-            res.writeHead(500, {'Content-Type': 'text/plain'});
-            res.end('Internal Server Error');
-            return;
-        }
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        res.end(data);
-    });
+app.get("/private/admin/:filename", isAuthenticated, (req, res) => {
+  const filePath = path.join(__dirname, "private", "admin", req.params.filename);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      console.error(`Error reading ${req.params.filename}:`, err);
+      res.status(500).send("Internal Server Error");
+      return;
+    } 
+    
+    res.type("html").send(data);
+  });
 });
 
-// ✅ Dynamic route handler for the private/student directory
-app.get('/private/student/:filename', isAuthenticated, (req, res) => {
-    const filePath = path.join(__dirname, 'private', 'student', req.params.filename);
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            console.error(`Error reading ${req.params.filename}:`, err);
-            res.writeHead(500, {'Content-Type': 'text/plain'});
-            res.end('Internal Server Error');
-            return;
-        }
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        res.end(data);
-    });
+app.get("/private/student/:filename", isAuthenticated, (req, res) => {
+  const filePath = path.join(__dirname, "private", "student", req.params.filename);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      console.error(`Error reading ${req.params.filename}:`, err);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+    res.type("html").send(data);
+  });
 });
 
-// ✅ Εκκίνηση server
-app.listen(3000, () => {
-  console.log("🚀 Server running at http://localhost:3000");
-});
+const server = http.createServer(app);
 
+server.listen(3000, '0.0.0.0', () => {
+    console.log('Server is listening on http://localhost:3000');
+});
