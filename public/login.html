@@ -17,7 +17,9 @@
     <input type="text" name="username" placeholder="Όνομα Χρήστη" required>
     <input type="password" name="password" placeholder="Κωδικός" required>
     <button type="submit">Είσοδος</button>
+    
   </form>
+   <p>Δεν έχεις λογαριασμό; <a href="/signup.html">Εγγραφή εδώ</a></p>
 
   <p id="msg" style="color:red;"></p>
 
@@ -41,6 +43,9 @@
         document.getElementById("msg").textContent = result.message || "Λάθος στοιχεία!";
       }
     });
+
+    <p>Δεν έχεις λογαριασμό; <a href="/signup.html">Εγγραφή εδώ</a></p>
+
   </script>
 </body>
 </html>

@@ -69,8 +69,8 @@ app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
   const roles = [
-    { table: "admins", role: "admin", redirect: "/private/admin/admin.html" },
-    { table: "students", role: "student", redirect: "/private/student/student.html" }
+    { table: "admins", role: "admin", redirect: "/private/admin.html" },
+    { table: "students", role: "student", redirect: "/private/student.html" }
   ];
 
   const checkCredentials = (index) => {
@@ -107,6 +107,58 @@ app.post("/login", (req, res) => {
   checkCredentials(0);
 });
 
+// ----------------------
+// SIGN UP (ΜΟΝΟ STUDENT)
+// ----------------------
+app.post("/signup", (req, res) => {
+  const {
+    student_am,
+    username,
+    password,
+    student_number,
+    first_name,
+    last_name,
+    email
+  } = req.body;
+
+  if (!student_am || !username || !password || !student_number || !first_name || !last_name || !email) {
+    return res.status(400).json({ message: "Συμπλήρωσε όλα τα πεδία!" });
+  }
+
+  // Έλεγχος αν υπάρχει ήδη ο χρήστης
+  db.query(
+    "SELECT * FROM students WHERE student_username = ? OR student_email = ? OR student_number = ?",
+    [username, email, student_number],
+    (err, results) => {
+      if (err) {
+        console.error("Error checking existing user:", err);
+        return res.status(500).json({ message: "Σφάλμα συστήματος" });
+      }
+
+      if (results.length > 0) {
+        return res.status(400).json({ message: "Ο χρήστης / email / αριθμός μητρώου υπάρχει ήδη!" });
+      }
+
+      // Εισαγωγή νέου student
+      db.query(
+        `INSERT INTO students 
+        (student_am, student_username, student_password, student_number, student_first_name, student_last_name, student_email, role_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 2)`,
+        [student_am, username, password, student_number, first_name, last_name, email],
+        (err) => {
+          if (err) {
+            console.error("Error inserting student:", err);
+            return res.status(500).json({ message: "Αποτυχία δημιουργίας λογαριασμού" });
+          }
+
+          res.json({ message: "Ο λογαριασμός δημιουργήθηκε!", redirect: "/" });
+        }
+      );
+    }
+  );
+});
+
+
 // Logout
 app.post("/logout", (req, res) => {
   if (req.session.user) console.log(`👋 ${req.session.user.username} logged out`);
@@ -124,34 +176,15 @@ app.post("/logout", (req, res) => {
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
-
-app.get("/private/admin/:filename", isAuthenticated, (req, res) => {
-  const filePath = path.join(__dirname, "private", "admin", req.params.filename);
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      console.error(`Error reading ${req.params.filename}:`, err);
-      res.status(500).send("Internal Server Error");
-      return;
-    } 
-    
-    res.type("html").send(data);
-  });
+app.get("/private/admin.html", isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "private", "admin.html"));
 });
 
-app.get("/private/student/:filename", isAuthenticated, (req, res) => {
-  const filePath = path.join(__dirname, "private", "student", req.params.filename);
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      console.error(`Error reading ${req.params.filename}:`, err);
-      res.status(500).send("Internal Server Error");
-      return;
-    }
-    res.type("html").send(data);
-  });
+app.get("/private/student.html", isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "private", "student.html"));
 });
 
-const server = http.createServer(app);
 
-server.listen(3000, '0.0.0.0', () => {
+app.listen(3000, '0.0.0.0', () => {
     console.log('Server is listening on http://localhost:3000');
 });

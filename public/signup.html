@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Εγγραφή Φοιτητή</title>
+<style>
+  body { font-family: sans-serif; margin-top: 50px; text-align: center; }
+  form { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+  input { display: block; margin: 10px auto; padding: 8px; width: 220px; }
+  button { padding: 8px 16px; }
+</style>
+</head>
+
+<body>
+<h2>Εγγραφή Φοιτητή</h2>
+
+<form id="signupForm">
+    <input name="student_am" placeholder="Αριθμός Μητρώου" required>
+    <input name="username" placeholder="Όνομα Χρήστη" required>
+    <input type="password" name="password" placeholder="Κωδικός" required>
+    <input name="student_number" placeholder="Αριθμός Φοιτητή" required>
+    <input name="first_name" placeholder="Όνομα" required>
+    <input name="last_name" placeholder="Επώνυμο" required>
+    <input name="email" type="email" placeholder="Email" required>
+
+    <button type="submit">Εγγραφή</button>
+</form>
+
+<p id="msg" style="color:red;"></p>
+
+<script>
+document.getElementById("signupForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    const res = await fetch("/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    if (result.redirect) window.location.href = result.redirect;
+    else document.getElementById("msg").textContent = result.message;
+});
+</script>
+
+</body>
+</html>
