@@ -1,51 +1,48 @@
-
 <!DOCTYPE html>
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 100px; }
-    form { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
-    input { display: block; margin: 10px auto; padding: 8px; width: 200px; }
-    button { padding: 8px 16px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Σύνδεση</title>
+  <link rel="stylesheet" href="/public/css/global.css?v=3" />
 </head>
 <body>
-  <h2>Σύνδεση</h2>
-  <form id="loginForm">
-    <input type="text" name="username" placeholder="Όνομα Χρήστη" required>
-    <input type="password" name="password" placeholder="Κωδικός" required>
-    <button type="submit">Είσοδος</button>
-    
-  </form>
-   <p>Δεν έχεις λογαριασμό; <a href="/signup.html">Εγγραφή εδώ</a></p>
-
-  <p id="msg" style="color:red;"></p>
+  <div class="forms" style="display: block; max-width: 400px; margin-top: 120px;">
+    <h2>Σύνδεση</h2>
+    <form id="loginForm">
+      <input type="text" name="username" placeholder="Όνομα Χρήστη" required>
+      <input type="password" name="password" placeholder="Κωδικός" required>
+      <button type="submit">Είσοδος</button>
+    </form>
+    <p style="margin-top: 10px;">Δεν έχεις λογαριασμό; <a href="/signup.html">Εγγραφή εδώ</a></p>
+    <p id="msg" style="color:red;"></p>
+  </div>
 
   <script>
-    
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData.entries());
 
-      const res = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-      const result = await res.json();
-      if (result.redirect) {
-        window.location.href = result.redirect;
-      } else {
-        document.getElementById("msg").textContent = result.message || "Λάθος στοιχεία!";
+        const result = await res.json();
+
+        if (res.ok && result.redirect) {
+          window.location.href = result.redirect;
+        } else {
+          document.getElementById("msg").textContent = result.message || "Λάθος στοιχεία!";
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        document.getElementById("msg").textContent = "Σφάλμα σύνδεσης στον server.";
       }
     });
-
-    <p>Δεν έχεις λογαριασμό; <a href="/signup.html">Εγγραφή εδώ</a></p>
-
   </script>
 </body>
 </html>

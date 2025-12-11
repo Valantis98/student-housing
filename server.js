@@ -9,15 +9,12 @@ const MySQLStore = require("express-mysql-session")(session);
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
-    else if (path.endsWith('.css') || path.endsWith('.js')) res.setHeader('Cache-Control', 'public, max-age=31536000');
-    else if (path.endsWith('.jpg') || path.endsWith('.png')) res.setHeader('Cache-Control', 'public, max-age=604800');
-  }
-}));
+
+// ΠΡΟΣΩΡΙΝΑ: πιο απλό static χωρίς custom cache
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+
 
 // Database
 const db = mysql.createConnection({
@@ -161,7 +158,7 @@ app.post("/signup", (req, res) => {
 
 // Logout
 app.post("/logout", (req, res) => {
-  if (req.session.user) console.log(`👋 ${req.session.user.username} logged out`);
+  if (req.session.user) console.log(` ${req.session.user.username} logged out`);
   req.session.destroy((err) => {
     if (err) {
       console.error("Error destroying session:", err);
@@ -182,6 +179,11 @@ app.get("/private/admin.html", isAuthenticated, (req, res) => {
 
 app.get("/private/student.html", isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "private", "student.html"));
+});
+
+
+app.get("/signup.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "signup.html"));
 });
 
 

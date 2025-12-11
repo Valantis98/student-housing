@@ -1,10 +1,63 @@
-<h2>Welcome Student!</h2>
-<button onclick="logout()">Logout</button>
-<script>
-    
-  async function logout() {
-    const res = await fetch("/logout", { method: "POST" });
-    const data = await res.json();
-    window.location.href = data.redirect;
-  }
-</script>
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Πλατφόρμα Φοιτητή - Εστία & Σίτιση</title>
+  <link rel="stylesheet" href="/public/css/global.css?v=3" />
+</head>
+<body>
+  <div class="topBar">
+    <div class="title">Πλατφόρμα Φοιτητή - Εστία & Σίτιση</div>
+    <div class="buttonContainer">
+      <div id="burgerMenu" class="burgerMenu" onclick="toggleElement('dropdownMenu', 'flex')">&#9776;</div>
+      <div class="dropdownMenu" id="dropdownMenu">
+        <button class="dropdownButton" onclick="toggleElement('roomStatus')">Κατάσταση & Κράτηση Δωματίου</button>
+        <button class="dropdownButton" onclick="toggleElement('mealPreferences')">Προτιμήσεις Σίτισης & Μενού</button>
+        <button class="dropdownButton" onclick="toggleElement('chatSupport')">Υποστήριξη / Chat</button>
+        <button class="dropdownButton" onclick="toggleElement('uploadDocuments')">Ανέβασμα Δικαιολογητικών</button>
+        <button class="dropdownButton" onclick="logout()">Αποσύνδεση</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sideMenu">
+    <img src="/public/images/upatras-logo.gif" alt="upatras Logo" class="upatras-logo" />
+    <button class="dropdownButton" onclick="toggleElement('roomStatus')">Κατάσταση & Κράτηση Δωματίου</button>
+    <button class="dropdownButton" onclick="toggleElement('mealPreferences')">Προτιμήσεις Σίτισης & Μενού</button>
+    <button class="dropdownButton" onclick="toggleElement('chatSupport')">Υποστήριξη / Chat</button>
+    <button class="dropdownButton" onclick="toggleElement('uploadDocuments')">Ανέβασμα Δικαιολογητικών</button>
+    <button class="dropdownButton" onclick="logout()">Αποσύνδεση</button>
+  </div>
+
+  <!-- Κατάσταση & Κράτηση Δωματίου -->
+  <div id="roomStatus" class="forms" style="display:none">
+    <button class="close-button" onclick="toggleElement('roomStatus')">x</button>
+    <h2>Κατάσταση & Κράτηση Δωματίου</h2>
+    <p>Προβολή στοιχείων δωματίου και υποβολή αίτησης κράτησης.</p>
+  </div>
+
+  <!-- Προτιμήσεις Σίτισης & Μενού -->
+  <div id="mealPreferences" class="forms" style="display:none">
+    <button class="close-button" onclick="toggleElement('mealPreferences')">x</button>
+    <h2>Προτιμήσεις Σίτισης & Επιλογή Μενού</h2>
+    <p>Επιλογή διατροφικών προτιμήσεων και προβολή μενού.</p>
+  </div>
+
+  <!-- Chat / Υποστήριξη -->
+  <div id="chatSupport" class="forms" style="display:none">
+    <button class="close-button" onclick="toggleElement('chatSupport')">x</button>
+    <h2>Υποστήριξη / Επικοινωνία</h2>
+    <p>Επικοινωνία με τη διοίκηση μέσω chat ή φόρμας επικοινωνίας.</p>
+  </div>
+
+  <!-- Ανέβασμα Δικαιολογητικών -->
+  <div id="uploadDocuments" class="forms" style="display:none">
+    <button class="close-button" onclick="toggleElement('uploadDocuments')">x</button>
+    <h2>Ανέβασμα Δικαιολογητικών</h2>
+    <p>Μεταφόρτωση αρχείων για αιτήσεις σίτισης ή άλλους λόγους.</p>
+  </div>
+
+  <script src="/public/javascript/topbar_buttons.js"></script>
+</body>
+</html>
