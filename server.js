@@ -44,6 +44,13 @@ app.use(session({
   store: sessionStore
 }));
 
+// Δημιουργούμε ένα connection pool στη MySQL
+const pool = mysql.createPool({
+  host: 'localhost', user: 'root', password: 'τελεία', database: 'yourDB',
+  waitForConnections: true, connectionLimit: 10, queueLimit: 0
+});
+
+
 // Authentication middleware
 function isAuthenticated(req, res, next) {
   const roleUrlMap = {
@@ -168,6 +175,79 @@ app.post("/logout", (req, res) => {
     res.json({ message: "Logout successful", redirect: "/" });
   });
 });
+
+
+// ΕΝ: Κράτηση δωματίου
+app.post('/reserve', (req, res) => {
+    const roomId = req.body.room_id;
+    const studentAm = req.session.student_am;
+    if (!req.session.student_loggedin || !studentAm) {
+        return res.status(401).send('Δεν είστε συνδεδεμένος φοιτητής');
+    }
+    // Προσθήκη εγγραφής στην reservations
+    connection.query(
+        'INSERT INTO reservations (room_id, student_am) VALUES (?, ?)',
+        [roomId, studentAm],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send('Σφάλμα κράτησης');
+            }
+            // Ενημέρωση του δωμάτιου
+            connection.query(
+                'UPDATE rooms SET occupied = occupied + 1 WHERE id = ?',
+                [roomId],
+                (err2) => {
+                    if (err2) console.error(err2);
+                    // Επιστρέφουμε το ID της νέας κράτησης
+                    res.json({ reservationId: result.insertId });
+                }
+            );
+        }
+    );
+});
+
+// GET /rooms: Επιστρέφει διαθέσιμα δωμάτια (occupied < capacity)
+app.get('/rooms', async (req, res) => {
+  try {
+    // Επιλογή δωματίων που δεν είναι πλήρως κατειλημμένα
+    const [rows] = await pool.query(
+      'SELECT id, room_number, capacity, occupied FROM rooms WHERE occupied < capacity'
+    );
+    // Στέλνουμε πίσω JSON με τη λίστα
+    res.json(rows);
+  } catch (err) {
+    console.error('SQL σφάλμα GET /rooms:', err);
+    res.status(500).send('Λάθος διακομιστή');
+  }
+});
+
+// POST /reserve: Κράτηση για το δωμάτιο (requires session student_am)
+app.post('/reserve', async (req, res) => {
+  const studentAm = req.session.student_am; // π.χ. αποθηκευμένο στο login
+  const { room_id } = req.body;
+  if (!studentAm) {
+    return res.status(401).send('Μη εξουσιοδοτημένη πρόσβαση');
+  }
+
+  try {
+    // Εισαγωγή κράτησης
+    await pool.query(
+      'INSERT INTO reservations (room_id, student_am) VALUES (?, ?)',
+      [room_id, studentAm]
+    );
+    // Ενημέρωση πληρότητας δωματίου
+    await pool.query(
+      'UPDATE rooms SET occupied = occupied + 1 WHERE id = ?',
+      [room_id]
+    );
+    res.send('Κράτηση αποθηκεύτηκε');
+  } catch (err) {
+    console.error('SQL σφάλμα POST /reserve:', err);
+    res.status(500).send('Λάθος διακομιστή');
+  }
+});
+
 
 // Routes
 app.get("/", (req, res) => {

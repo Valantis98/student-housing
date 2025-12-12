@@ -82,3 +82,5 @@ function toggleElementDisplay(elementId, displayStyle = "block") {
 function toggleElement(elementId, displayStyle = "block") {
     toggleElementDisplay(elementId, displayStyle);
 }
+
+

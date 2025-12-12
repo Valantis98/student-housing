@@ -32,3 +32,12 @@ CREATE TABLE rooms (
   capacity INT DEFAULT 1,
   occupied INT DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS reservations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  room_id INT NOT NULL,
+  student_am INT NOT NULL,
+  reserved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (room_id) REFERENCES rooms(id),
+  FOREIGN KEY (student_am) REFERENCES students(student_am)
+);
